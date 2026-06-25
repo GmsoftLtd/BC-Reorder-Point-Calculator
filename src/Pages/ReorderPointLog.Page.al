@@ -18,6 +18,7 @@ page 50301 "Reorder Point Calculation Log"
                 field("Calculation DateTime"; Rec."Calculation DateTime") { ApplicationArea = All; }
                 field("Item No."; Rec."Item No.") { ApplicationArea = All; }
                 field("Result Code"; Rec."Result Code") { ApplicationArea = All; }
+                field("Applied"; Rec."Applied") { ApplicationArea = All; }
                 field("Calculated Reorder Point"; Rec."Calculated Reorder Point") { ApplicationArea = All; }
                 field("Previous Reorder Point"; Rec."Previous Reorder Point") { ApplicationArea = All; }
                 field("Avg Daily Demand"; Rec."Avg Daily Demand") { ApplicationArea = All; }

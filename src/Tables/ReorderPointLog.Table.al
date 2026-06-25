@@ -81,6 +81,11 @@ table 50301 "Reorder Point Calculation Log"
             DataClassification = CustomerContent;
             DecimalPlaces = 0 : 5;
         }
+        field(22; "Applied"; Boolean)
+        {
+            Caption = 'Applied';
+            DataClassification = CustomerContent;
+        }
         field(30; "Result Code"; Enum "Reorder Point Result Code")
         {
             Caption = 'Result Code';

@@ -49,15 +49,19 @@ codeunit 50301 "Reorder Point Job Queue Run"
         ColonIdx: Integer;
         FieldName: Text;
         FieldValue: Text;
+        BadFormatErr: Label 'Invalid FILTER parameter "%1". Expected "FieldName:Value", e.g. "FILTER=Item Category Code:FERT".', Comment = '%1 = the supplied clause';
+        UnknownFieldErr: Label 'Unknown FILTER field "%1". Supported fields: Item Category Code, Inventory Posting Group, Vendor No., No.', Comment = '%1 = the supplied field name';
     begin
-        // Format expected: "FieldName:Value" (e.g. "Item Category Code:FERT")
+        // Format expected: "FieldName:Value" (e.g. "Item Category Code:FERT").
+        // A malformed or unknown filter must FAIL the job, never silently fall through
+        // to processing the entire item catalog.
         ColonIdx := StrPos(Clause, ':');
         if ColonIdx = 0 then
-            exit;
+            Error(BadFormatErr, Clause);
         FieldName := CopyStr(Clause, 1, ColonIdx - 1).Trim();
         FieldValue := CopyStr(Clause, ColonIdx + 1).Trim();
-        if FieldValue = '' then
-            exit;
+        if (FieldName = '') or (FieldValue = '') then
+            Error(BadFormatErr, Clause);
 
         case UpperCase(FieldName) of
             'ITEM CATEGORY CODE', 'ITEMCATEGORY':
@@ -68,6 +72,8 @@ codeunit 50301 "Reorder Point Job Queue Run"
                 Item.SetFilter("Vendor No.", FieldValue);
             'NO.', 'ITEMNO':
                 Item.SetFilter("No.", FieldValue);
+            else
+                Error(UnknownFieldErr, FieldName);
         end;
     end;
 }

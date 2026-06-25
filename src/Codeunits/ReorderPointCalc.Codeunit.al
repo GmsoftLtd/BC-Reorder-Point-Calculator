@@ -21,6 +21,21 @@ codeunit 50300 "Reorder Point Calculator"
     end;
 
     procedure CalculateForItem(ItemNo: Code[20]; Apply: Boolean; var ResultCode: Enum "Reorder Point Result Code"; var Note: Text[250]): Decimal
+    begin
+        exit(RunCalc(ItemNo, Apply, true, ResultCode, Note));
+    end;
+
+    /// <summary>
+    /// Calculates the Reorder Point WITHOUT applying it to the item and WITHOUT writing
+    /// a log entry. Use for an interactive preview before the user confirms, so a
+    /// cancelled preview never leaves a misleading "OK" row in the calculation log.
+    /// </summary>
+    procedure CalculatePreview(ItemNo: Code[20]; var ResultCode: Enum "Reorder Point Result Code"; var Note: Text[250]): Decimal
+    begin
+        exit(RunCalc(ItemNo, false, false, ResultCode, Note));
+    end;
+
+    local procedure RunCalc(ItemNo: Code[20]; Apply: Boolean; DoLog: Boolean; var ResultCode: Enum "Reorder Point Result Code"; var Note: Text[250]): Decimal
     var
         Item: Record Item;
         AvgDemand: Decimal;
@@ -31,6 +46,7 @@ codeunit 50300 "Reorder Point Calculator"
         DemandDuringLT: Decimal;
         ReorderPoint: Decimal;
         PreviousRP: Decimal;
+        Applied: Boolean;
     begin
         EnsureSetup();
 
@@ -40,14 +56,16 @@ codeunit 50300 "Reorder Point Calculator"
         if Item.Blocked then begin
             ResultCode := ResultCode::"Item Blocked";
             Note := 'Item is blocked.';
-            LogResult(Item, 0, 0, 0, '', 0, 0, 0, Item."Reorder Point", ResultCode, Note);
+            if DoLog then
+                LogResult(Item, 0, 0, 0, '', 0, 0, 0, Item."Reorder Point", false, ResultCode, Note);
             exit(0);
         end;
 
         if Setup."Skip Make-to-Order" and IsMakeToOrder(Item) then begin
             ResultCode := ResultCode::"Make-to-Order Skipped";
             Note := 'Make-to-order item. Reorder point does not apply: supply is created per demand (Order policy / order-to-order binding).';
-            LogResult(Item, 0, 0, 0, '', 0, 0, 0, Item."Reorder Point", ResultCode, Note);
+            if DoLog then
+                LogResult(Item, 0, 0, 0, '', 0, 0, 0, Item."Reorder Point", false, ResultCode, Note);
             exit(0);
         end;
 
@@ -55,7 +73,8 @@ codeunit 50300 "Reorder Point Calculator"
         if Observations < Setup."Min Demand Observations" then begin
             ResultCode := ResultCode::"Insufficient Demand Data";
             Note := StrSubstNo('Only %1 demand observations found (minimum %2). No reliable demand rate.', Observations, Setup."Min Demand Observations");
-            LogResult(Item, AvgDemand, Observations, 0, '', 0, 0, 0, Item."Reorder Point", ResultCode, Note);
+            if DoLog then
+                LogResult(Item, AvgDemand, Observations, 0, '', 0, 0, 0, Item."Reorder Point", false, ResultCode, Note);
             exit(0);
         end;
 
@@ -63,7 +82,8 @@ codeunit 50300 "Reorder Point Calculator"
         if LeadTimeDays <= 0 then begin
             ResultCode := ResultCode::"No Lead Time Data";
             Note := 'No lead time available: no receipt history, no Lead Time Calculation, and the setup fallback is 0.';
-            LogResult(Item, AvgDemand, Observations, 0, '', 0, 0, 0, Item."Reorder Point", ResultCode, Note);
+            if DoLog then
+                LogResult(Item, AvgDemand, Observations, 0, '', 0, 0, 0, Item."Reorder Point", false, ResultCode, Note);
             exit(0);
         end;
 
@@ -85,6 +105,7 @@ codeunit 50300 "Reorder Point Calculator"
             if Setup."Set Reordering Policy" and (Item."Reordering Policy" = Item."Reordering Policy"::" ") then
                 Item.Validate("Reordering Policy", Item."Reordering Policy"::"Fixed Reorder Qty.");
             Item.Modify(true);
+            Applied := true;
         end;
 
         ResultCode := ResultCode::OK;
@@ -96,7 +117,8 @@ codeunit 50300 "Reorder Point Calculator"
                 LeadTimeSource, Observations),
             1, 250);
 
-        LogResult(Item, AvgDemand, Observations, LeadTimeDays, LeadTimeSource, DemandDuringLT, SafetyStock, ReorderPoint, PreviousRP, ResultCode, Note);
+        if DoLog then
+            LogResult(Item, AvgDemand, Observations, LeadTimeDays, LeadTimeSource, DemandDuringLT, SafetyStock, ReorderPoint, PreviousRP, Applied, ResultCode, Note);
 
         exit(ReorderPoint);
     end;
@@ -149,15 +171,43 @@ codeunit 50300 "Reorder Point Calculator"
         end;
     end;
 
-    local procedure IsMakeToOrder(Item: Record Item): Boolean
+    /// <summary>
+    /// Single source of truth for "is this item make-to-order". Two signals point at the
+    /// same thing: supply is pegged to a single demand, so there is no replenished stock
+    /// level for a reorder point to defend.
+    /// </summary>
+    procedure IsMakeToOrder(Item: Record Item): Boolean
     begin
-        // Two signals point at the same thing: supply is pegged to a single demand,
-        // so there is no replenished stock level for a reorder point to defend.
         if Item."Manufacturing Policy" = Item."Manufacturing Policy"::"Make-to-Order" then
             exit(true);
         if Item."Reordering Policy" = Item."Reordering Policy"::Order then
             exit(true);
         exit(false);
+    end;
+
+    /// <summary>
+    /// Counts items in the given filter that a bulk run will skip as make-to-order, using
+    /// the SAME definition and population (Type = Inventory, not Blocked) as CalculateBulk,
+    /// so a pre-run warning matches what actually happens.
+    /// </summary>
+    procedure CountMakeToOrderSkipped(var ItemFilter: Record Item): Integer
+    var
+        Item: Record Item;
+        SkipCount: Integer;
+    begin
+        EnsureSetup();
+        if not Setup."Skip Make-to-Order" then
+            exit(0);
+
+        Item.CopyFilters(ItemFilter);
+        Item.SetRange(Type, Item.Type::Inventory);
+        Item.SetRange(Blocked, false);
+        if Item.FindSet() then
+            repeat
+                if IsMakeToOrder(Item) then
+                    SkipCount += 1;
+            until Item.Next() = 0;
+        exit(SkipCount);
     end;
 
     local procedure ComputeAvgDailyDemand(ItemNo: Code[20]; var AvgDemand: Decimal; var Observations: Integer)
@@ -254,6 +304,10 @@ codeunit 50300 "Reorder Point Calculator"
         n: Integer;
         LTDays: Decimal;
     begin
+        // By design this averages ALL purchase-receipt history (not just the demand window):
+        // lead time is a supplier-performance trait that is more stable with more samples,
+        // whereas demand is windowed because it trends. If recent supplier performance has
+        // shifted materially, prefer the Lead Time Calculation field over receipt history.
         PurchRcptLine.SetCurrentKey("No.");
         PurchRcptLine.SetRange("No.", ItemNo);
         PurchRcptLine.SetRange(Type, PurchRcptLine.Type::Item);
@@ -294,7 +348,7 @@ codeunit 50300 "Reorder Point Calculator"
         exit(ResultDate - Today2);
     end;
 
-    local procedure LogResult(Item: Record Item; AvgD: Decimal; Obs: Integer; LeadTime: Decimal; LeadTimeSource: Text[50]; DemandDuringLT: Decimal; SafetyStock: Decimal; Result: Decimal; PrevResult: Decimal; ResultCode: Enum "Reorder Point Result Code"; Note: Text[250])
+    local procedure LogResult(Item: Record Item; AvgD: Decimal; Obs: Integer; LeadTime: Decimal; LeadTimeSource: Text[50]; DemandDuringLT: Decimal; SafetyStock: Decimal; Result: Decimal; PrevResult: Decimal; Applied: Boolean; ResultCode: Enum "Reorder Point Result Code"; Note: Text[250])
     var
         LogEntry: Record "Reorder Point Calculation Log";
     begin
@@ -314,6 +368,7 @@ codeunit 50300 "Reorder Point Calculator"
         LogEntry."Replenishment System" := CopyStr(Format(Item."Replenishment System"), 1, MaxStrLen(LogEntry."Replenishment System"));
         LogEntry."Calculated Reorder Point" := Result;
         LogEntry."Previous Reorder Point" := PrevResult;
+        LogEntry.Applied := Applied;
         LogEntry."Result Code" := ResultCode;
         LogEntry.Note := Note;
         LogEntry.Insert(true);

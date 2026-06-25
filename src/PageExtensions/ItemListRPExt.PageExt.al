@@ -31,7 +31,7 @@ pageextension 50301 "Item List RP Ext" extends "Item List"
                     if Item.GetFilter("No.") = '' then
                         Item.CopyFilters(Rec);
 
-                    MTOCount := CountMakeToOrder(Item);
+                    MTOCount := Calc.CountMakeToOrderSkipped(Item);
                     if MTOCount > 0 then
                         Confirmed := Confirm(ConfirmTxt, false, MTOCount)
                     else
@@ -45,13 +45,4 @@ pageextension 50301 "Item List RP Ext" extends "Item List"
             }
         }
     }
-
-    local procedure CountMakeToOrder(var ItemFilter: Record Item): Integer
-    var
-        Item: Record Item;
-    begin
-        Item.CopyFilters(ItemFilter);
-        Item.SetFilter("Manufacturing Policy", '%1', Item."Manufacturing Policy"::"Make-to-Order");
-        exit(Item.Count());
-    end;
 }

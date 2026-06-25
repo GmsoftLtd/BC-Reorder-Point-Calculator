@@ -24,29 +24,29 @@ pageextension 50300 "Item Card RP Ext" extends "Item Card"
                     ResultCode: Enum "Reorder Point Result Code";
                     Note: Text[250];
                     Result: Decimal;
-                    ApplyResult: Boolean;
                     Details: Text;
                     MsgTxt: Label 'Reorder Point for %1: %2 units.\Previous value: %3.\Result: %4%5\\Apply this value to the item?';
                     MsgPreviewTxt: Label 'Reorder Point for %1 would be: %2 units (preview only).\Previous value: %3.\Result: %4%5';
                 begin
                     Setup.GetSetup();
 
-                    Result := Calc.CalculateForItem(Rec."No.", false, ResultCode, Note);
+                    // Preview only: does not write to the item or the log, so a cancelled
+                    // confirm leaves no misleading "applied" trail.
+                    Result := Calc.CalculatePreview(Rec."No.", ResultCode, Note);
                     if Note <> '' then
                         Details := '\' + Note;
 
                     if Setup."Update Item Field" and (ResultCode = ResultCode::OK) then begin
-                        ApplyResult := Confirm(MsgTxt, true, Rec."No.", Format(Result), Format(Rec."Reorder Point"), Format(ResultCode), Details);
-                        if ApplyResult then begin
-                            Rec.Validate("Reorder Point", Result);
-                            if Setup."Set Reordering Policy" and (Rec."Reordering Policy" = Rec."Reordering Policy"::" ") then
-                                Rec.Validate("Reordering Policy", Rec."Reordering Policy"::"Fixed Reorder Qty.");
-                            Rec.Modify(true);
+                        if Confirm(MsgTxt, true, Rec."No.", Format(Result), Format(Rec."Reorder Point"), Format(ResultCode), Details) then begin
+                            // Apply through the calculator: it owns the item write (with the
+                            // right indirect permissions), logs it as Applied, and keeps the
+                            // Reordering Policy switch in one place.
+                            Calc.CalculateForItem(Rec."No.", true);
+                            Rec.Get(Rec."No.");
+                            CurrPage.Update(false);
                         end;
                     end else
                         Message(MsgPreviewTxt, Rec."No.", Format(Result), Format(Rec."Reorder Point"), Format(ResultCode), Details);
-
-                    CurrPage.Update(true);
                 end;
             }
             action(ShowRPLog)
@@ -70,6 +70,7 @@ pageextension 50300 "Item Card RP Ext" extends "Item Card"
             {
                 Caption = 'Generate Demo Data (Sandbox)';
                 ApplicationArea = All;
+                Visible = IsSandboxEnv;
                 Image = TestFile;
                 ToolTip = 'SANDBOX ONLY. Creates ~6 past Purchase Orders (for lead time and inventory) and ~30 past Sales Orders (last 365 days) plus 3 future Sales Orders, all linked to this item and unposted. Post the Purchase Orders first, then the Sales Orders, then run Calculate Reorder Point to see real numbers. Do not run in production.';
 
@@ -85,4 +86,15 @@ pageextension 50300 "Item Card RP Ext" extends "Item Card"
             }
         }
     }
+
+    trigger OnOpenPage()
+    var
+        EnvironmentInformation: Codeunit "Environment Information";
+    begin
+        // The demo-data action is a sandbox-only utility; keep it out of sight on production.
+        IsSandboxEnv := EnvironmentInformation.IsSandbox();
+    end;
+
+    var
+        IsSandboxEnv: Boolean;
 }
