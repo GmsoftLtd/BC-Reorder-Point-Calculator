@@ -9,6 +9,7 @@ permissionset 50300 "Reorder Point"
                   table "Reorder Point Calculation Log" = X,
                   codeunit "Reorder Point Calculator" = X,
                   codeunit "Reorder Point Job Queue Run" = X,
+                  codeunit "Reorder Point Demo Data" = X,
                   page "Reorder Point Setup" = X,
                   page "Reorder Point Calculation Log" = X;
 }
