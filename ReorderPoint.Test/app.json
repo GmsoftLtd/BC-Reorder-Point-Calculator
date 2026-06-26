@@ -1,0 +1,43 @@
+{
+  "id": "c3a2b3c4-d5e6-4f70-8a91-0b1c2d3e4f52",
+  "name": "BC Reorder Point Calculator Tests",
+  "publisher": "GMSOFT Limited",
+  "version": "1.0.0.0",
+  "brief": "Tests for the BC Reorder Point Calculator",
+  "description": "Automated tests for the BC Reorder Point Calculator extension.",
+  "platform": "28.0.0.0",
+  "application": "28.0.0.0",
+  "dependencies": [
+    {
+      "id": "b7e2c9d4-3a1f-4c8e-9b5d-2e6f0a1c3d7b",
+      "name": "BC Reorder Point Calculator",
+      "publisher": "GMSOFT Limited",
+      "version": "1.0.0.0"
+    },
+    {
+      "id": "dd0be2ea-f733-4d65-bb34-a28f4624fb14",
+      "name": "Library Assert",
+      "publisher": "Microsoft",
+      "version": "1.0.0.0"
+    },
+    {
+      "id": "5d86850b-0d76-4eca-bd7b-951ad998e997",
+      "name": "Tests-TestLibraries",
+      "publisher": "Microsoft",
+      "version": "1.0.0.0"
+    }
+  ],
+  "idRanges": [
+    {
+      "from": 59300,
+      "to": 59399
+    }
+  ],
+  "target": "Cloud",
+  "features": [ "NoImplicitWith" ],
+  "resourceExposurePolicy": {
+    "allowDebugging": true,
+    "allowDownloadingSource": true,
+    "includeSourceInSymbolFile": true
+  }
+}
