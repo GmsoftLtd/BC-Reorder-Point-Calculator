@@ -1,3 +1,8 @@
+/// <summary>
+/// Extends the Item Card with Reorder Point actions: calculate (with preview and confirm
+/// before applying), open this item's calculation log, and a sandbox-only demo-data
+/// generator that is hidden in production environments.
+/// </summary>
 pageextension 50300 "Item Card RP Ext" extends "Item Card"
 {
     actions

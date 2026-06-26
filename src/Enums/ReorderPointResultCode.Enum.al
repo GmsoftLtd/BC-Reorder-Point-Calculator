@@ -1,3 +1,8 @@
+/// <summary>
+/// Outcome classification for a Reorder Point calculation: OK when a value was produced,
+/// or a reason the item was skipped (insufficient demand data, no lead time data,
+/// make-to-order, blocked, filtered out, or error). Extensible.
+/// </summary>
 enum 50300 "Reorder Point Result Code"
 {
     Extensible = true;

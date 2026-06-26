@@ -1,3 +1,8 @@
+/// <summary>
+/// Assignable permission set granting full access to all Reorder Point objects: the setup
+/// and calculation log tables (with data) and the calculator, job queue, demo-data
+/// codeunits and pages.
+/// </summary>
 permissionset 50300 "Reorder Point"
 {
     Assignable = true;

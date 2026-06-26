@@ -1,3 +1,7 @@
+/// <summary>
+/// Read-only list of Reorder Point Calculation Log entries, newest first, showing the
+/// inputs, result, and outcome of each calculation for traceability and audit.
+/// </summary>
 page 50301 "Reorder Point Calculation Log"
 {
     Caption = 'Reorder Point Calculation Log';

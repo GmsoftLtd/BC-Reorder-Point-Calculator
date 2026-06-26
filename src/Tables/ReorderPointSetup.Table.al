@@ -84,6 +84,9 @@ table 50300 "Reorder Point Setup"
         }
     }
 
+    /// <summary>
+    /// Returns the singleton setup record, creating it with default values on first use.
+    /// </summary>
     procedure GetSetup()
     begin
         if not Get() then begin

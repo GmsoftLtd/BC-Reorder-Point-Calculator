@@ -1,3 +1,8 @@
+/// <summary>
+/// Sandbox-only utility that generates unposted demo Sales and Purchase Orders for an
+/// item, so the Reorder Point calculator has demand history and lead time to work with.
+/// Refuses to run in a production environment. Not for production use.
+/// </summary>
 codeunit 50399 "Reorder Point Demo Data"
 {
     // SANDBOX UTILITY — generates unposted demo Sales and Purchase Orders
@@ -9,6 +14,12 @@ codeunit 50399 "Reorder Point Demo Data"
                   tabledata "Purchase Header" = rim,
                   tabledata "Purchase Line" = rim;
 
+    /// <summary>
+    /// Generates demo data for a single item: ~6 past Purchase Orders (lead time and
+    /// inventory), ~30 past Sales Orders (demand history over the last 365 days), and 3
+    /// future Sales Orders. All documents are left unposted. Sandbox environments only.
+    /// </summary>
+    /// <param name="ItemNo">The item to generate demo Sales and Purchase Orders for.</param>
     procedure GenerateForItem(ItemNo: Code[20])
     var
         Item: Record Item;

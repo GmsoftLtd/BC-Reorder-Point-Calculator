@@ -1,3 +1,9 @@
+/// <summary>
+/// Job Queue entry point for unattended Reorder Point calculation. Schedule as Codeunit
+/// 50301; an optional Parameter String of the form "FILTER=FieldName:Value" narrows the
+/// item set. Without parameters, all inventory items are processed (make-to-order items
+/// are skipped and logged).
+/// </summary>
 codeunit 50301 "Reorder Point Job Queue Run"
 {
     // Schedule via: Job Queue Entry -> Object Type to Run: Codeunit -> Object ID: 50301

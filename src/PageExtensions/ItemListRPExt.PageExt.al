@@ -1,3 +1,8 @@
+/// <summary>
+/// Extends the Item List with a bulk Reorder Point action that calculates and applies the
+/// reorder point for the currently filtered or selected items, warning up front how many
+/// make-to-order items will be skipped.
+/// </summary>
 pageextension 50301 "Item List RP Ext" extends "Item List"
 {
     actions

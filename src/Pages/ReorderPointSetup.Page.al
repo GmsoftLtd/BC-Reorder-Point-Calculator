@@ -1,3 +1,9 @@
+/// <summary>
+/// Administration card for the Reorder Point Setup singleton: edit the calculation inputs
+/// (history window, minimum observations, fallback lead time) and behaviour switches
+/// (safety stock, rounding, item write-back, reordering policy, make-to-order skip,
+/// logging), and open the calculation log.
+/// </summary>
 page 50300 "Reorder Point Setup"
 {
     Caption = 'Reorder Point Setup';

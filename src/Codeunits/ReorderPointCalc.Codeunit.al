@@ -1,3 +1,10 @@
+/// <summary>
+/// Core engine for the Reorder Point calculation. Computes the reorder point for a
+/// single item or a filtered set as (average daily demand x lead time) + safety stock,
+/// optionally writes the result back to the Item card, and records each run in the
+/// calculation log. Demand is read from posted sales; lead time from purchase-receipt
+/// history or the item's Lead Time Calculation, with a setup fallback.
+/// </summary>
 codeunit 50300 "Reorder Point Calculator"
 {
     Permissions = tabledata Item = rm,
@@ -10,8 +17,11 @@ codeunit 50300 "Reorder Point Calculator"
     /// <summary>
     /// Calculates and (optionally) updates the Reorder Point for a single item.
     /// Reorder Point = (Average Daily Demand x Lead Time in days) + Safety Stock.
-    /// Returns the calculated reorder point. Logs to history if enabled.
+    /// Logs to history if enabled.
     /// </summary>
+    /// <param name="ItemNo">The item to calculate the reorder point for.</param>
+    /// <param name="Apply">When true, writes the result to the item (subject to setup) and logs it as applied.</param>
+    /// <returns>The calculated reorder point, or 0 when the item cannot be calculated.</returns>
     procedure CalculateForItem(ItemNo: Code[20]; Apply: Boolean): Decimal
     var
         ResultCode: Enum "Reorder Point Result Code";
@@ -20,6 +30,15 @@ codeunit 50300 "Reorder Point Calculator"
         exit(CalculateForItem(ItemNo, Apply, ResultCode, Note));
     end;
 
+    /// <summary>
+    /// Calculates and (optionally) updates the Reorder Point for a single item, returning
+    /// the outcome classification and an explanatory note alongside the value.
+    /// </summary>
+    /// <param name="ItemNo">The item to calculate the reorder point for.</param>
+    /// <param name="Apply">When true, writes the result to the item (subject to setup) and logs it as applied.</param>
+    /// <param name="ResultCode">Out: the outcome classification (OK, skipped, insufficient data, etc.).</param>
+    /// <param name="Note">Out: a human-readable explanation of the result.</param>
+    /// <returns>The calculated reorder point, or 0 when the item cannot be calculated.</returns>
     procedure CalculateForItem(ItemNo: Code[20]; Apply: Boolean; var ResultCode: Enum "Reorder Point Result Code"; var Note: Text[250]): Decimal
     begin
         exit(RunCalc(ItemNo, Apply, true, ResultCode, Note));
@@ -30,6 +49,10 @@ codeunit 50300 "Reorder Point Calculator"
     /// a log entry. Use for an interactive preview before the user confirms, so a
     /// cancelled preview never leaves a misleading "OK" row in the calculation log.
     /// </summary>
+    /// <param name="ItemNo">The item to calculate the reorder point for.</param>
+    /// <param name="ResultCode">Out: the outcome classification (OK, skipped, insufficient data, etc.).</param>
+    /// <param name="Note">Out: a human-readable explanation of the result.</param>
+    /// <returns>The calculated reorder point, or 0 when the item cannot be calculated.</returns>
     procedure CalculatePreview(ItemNo: Code[20]; var ResultCode: Enum "Reorder Point Result Code"; var Note: Text[250]): Decimal
     begin
         exit(RunCalc(ItemNo, false, false, ResultCode, Note));
@@ -127,6 +150,9 @@ codeunit 50300 "Reorder Point Calculator"
     /// Bulk calculation for items currently filtered on the Item record passed in.
     /// Make-to-order items are processed but skipped (logged), so the run is honest about coverage.
     /// </summary>
+    /// <param name="ItemFilter">The item record whose current filters define the set to process.</param>
+    /// <param name="Apply">When true, writes each result to the item (subject to setup) and logs it as applied.</param>
+    /// <returns>The number of items processed.</returns>
     procedure CalculateBulk(var ItemFilter: Record Item; Apply: Boolean): Integer
     var
         Item: Record Item;
@@ -176,6 +202,8 @@ codeunit 50300 "Reorder Point Calculator"
     /// same thing: supply is pegged to a single demand, so there is no replenished stock
     /// level for a reorder point to defend.
     /// </summary>
+    /// <param name="Item">The item to classify.</param>
+    /// <returns>True if the item is make-to-order (Make-to-Order manufacturing policy or Order reordering policy).</returns>
     procedure IsMakeToOrder(Item: Record Item): Boolean
     begin
         if Item."Manufacturing Policy" = Item."Manufacturing Policy"::"Make-to-Order" then
@@ -190,6 +218,8 @@ codeunit 50300 "Reorder Point Calculator"
     /// the SAME definition and population (Type = Inventory, not Blocked) as CalculateBulk,
     /// so a pre-run warning matches what actually happens.
     /// </summary>
+    /// <param name="ItemFilter">The item record whose current filters define the set to inspect.</param>
+    /// <returns>The number of items in the filter that a bulk run would skip as make-to-order.</returns>
     procedure CountMakeToOrderSkipped(var ItemFilter: Record Item): Integer
     var
         Item: Record Item;

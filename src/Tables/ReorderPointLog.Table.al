@@ -1,3 +1,9 @@
+/// <summary>
+/// History log of Reorder Point calculations. One entry per calculated item per run,
+/// capturing the inputs (average daily demand, lead time and its source, safety stock),
+/// the resulting reorder point, the previous value, whether it was applied, and the
+/// outcome classification with an explanatory note.
+/// </summary>
 table 50301 "Reorder Point Calculation Log"
 {
     Caption = 'Reorder Point Calculation Log';
