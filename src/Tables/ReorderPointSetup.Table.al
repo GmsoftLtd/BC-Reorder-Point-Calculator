@@ -1,3 +1,9 @@
+/// <summary>
+/// Singleton setup table holding the parameters used by the Reorder Point
+/// calculation: demand history window, minimum observations, fallback lead
+/// time, and switches controlling safety stock, rounding, and how results are
+/// written back to the Item card.
+/// </summary>
 table 50300 "Reorder Point Setup"
 {
     Caption = 'Reorder Point Setup';
