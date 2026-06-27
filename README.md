@@ -7,11 +7,15 @@ A free, MIT-licensed Business Central extension that calculates the **Reorder Po
 
 **Companion blog post:** [Reorder Point in Business Central — Make-to-Stock, Make-to-Order, and the Number That Triggers Replenishment](https://insidebusinesscentral.com/reorder-point-in-business-central-calculator/)
 
+> ⭐ If this saves you time, please **star the repo** — it helps other Business Central folks find it.
+
 This is the third piece of a three-part replenishment set:
 
 - [bc-safety-stock](https://github.com/GmsoftLtd/bc-safety-stock) — how much buffer to hold (50100-50199)
 - [bc-eoq-calculator](https://github.com/GmsoftLtd/bc-eoq-calculator) — how much to order (50200-50299)
 - **bc-reorder-point** — when to order (50300-50399)
+
+…plus [bc-ValueEntryGL-Audit](https://github.com/GmsoftLtd/bc-ValueEntryGL-Audit) — inventory-to-G/L audit.
 
 ---
 
